@@ -6,10 +6,16 @@
     ".agents/skills/web-design-guidelines/SKILL.md",
     ".agents/skills/vercel-react-best-practices/SKILL.md",
     ".agents/skills/vercel-composition-patterns/SKILL.md",
+    ".agents/skills/playwright-cli/SKILL.md",
     ".agents/skills/vite/SKILL.md",
     ".agents/skills/vitest/SKILL.md",
     ".agents/skills/ant-design/SKILL.md",
-    ".agents/skills/react-router-data-mode/SKILL.md"
+    ".agents/skills/react-router-data-mode/SKILL.md",
+    ".agents/skills/yeet/SKILL.md",
+    ".agents/skills/accessibility/SKILL.md",
+    ".agents/skills/gh-fix-ci/SKILL.md",
+    ".agents/skills/github-actions-hardening/SKILL.md",
+    ".agents/skills/dependabot/SKILL.md"
   ],
   "optionalHooks": [
     ".agents/hooks/block-dangerous.mjs",

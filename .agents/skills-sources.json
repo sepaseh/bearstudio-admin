@@ -33,6 +33,14 @@
   },
   {
     "project": "bearstudio-admin",
+    "name": "playwright-cli",
+    "repository": "https://github.com/microsoft/playwright-cli",
+    "commit": "dc5f4d5616ab5a28ded12fd7101a4d49bd59a820",
+    "path": "skills/playwright-cli",
+    "skillSha256": "1C4C34000F6102EE71FE91BF25351A221F7DA37F48F2D556E1756F66E17D356F"
+  },
+  {
+    "project": "bearstudio-admin",
     "name": "vite",
     "repository": "https://github.com/antfu/skills",
     "commit": "4a6bb39e7b45e26402eb215393c51ccf5df1ca4c",
@@ -62,5 +70,45 @@
     "commit": "33578aae4aa36a90c9f8f602105a1ccb0f4efe45",
     "path": "skills/react-router-data-mode",
     "skillSha256": "B65204814690FDA386B4B0D263A5A9AB51515033436BB8AC9CD6A78D79A7B569"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "yeet",
+    "repository": "https://github.com/openai/skills",
+    "commit": "49f948faa9258a0c61caceaf225e179651397431",
+    "path": "skills/.curated/yeet",
+    "skillSha256": "4829D4909081E1ABF91507FB581E6F566CE7064001892414F32191895B08A595"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "accessibility",
+    "repository": "https://github.com/addyosmani/web-quality-skills",
+    "commit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
+    "path": "skills/accessibility",
+    "skillSha256": "267FB2A0707D6142F2871F22688203A42BA21291A2AA200FB740936E41362B5D"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "gh-fix-ci",
+    "repository": "https://github.com/openai/skills",
+    "commit": "49f948faa9258a0c61caceaf225e179651397431",
+    "path": "skills/.curated/gh-fix-ci",
+    "skillSha256": "7B326B4A2F0F5F85122144628EC02077E48841E0E0E82EFCE88B3415BCFB7C26"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "github-actions-hardening",
+    "repository": "https://github.com/github/awesome-copilot",
+    "commit": "93fc8b9ee3ef56b9b5e7261e6ce92d314cb2c1cf",
+    "path": "skills/github-actions-hardening",
+    "skillSha256": "31A8E7483D978E6267941EDEFEBBE42AAA946BB3D43C9095AA3DB343D4A8FF06"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "dependabot",
+    "repository": "https://github.com/github/awesome-copilot",
+    "commit": "93fc8b9ee3ef56b9b5e7261e6ce92d314cb2c1cf",
+    "path": "skills/dependabot",
+    "skillSha256": "82ED5DE6CF667E52A33994B4612E288A633DBEBED3C3E11EC8760377457D0E95"
   }
 ]
