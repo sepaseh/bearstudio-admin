@@ -81,6 +81,14 @@
   },
   {
     "project": "bearstudio-admin",
+    "name": "modern-web-guidance",
+    "repository": "https://github.com/GoogleChrome/modern-web-guidance",
+    "commit": "2b4aa13a72dd47cd135b06ce5abfccd92e19b24f",
+    "path": "skills/modern-web-guidance",
+    "skillSha256": "4BBD5A56220B3560CD76A665D0AA21C8DB5ACB1B51088E47463EB068D9F6317D"
+  },
+  {
+    "project": "bearstudio-admin",
     "name": "accessibility",
     "repository": "https://github.com/addyosmani/web-quality-skills",
     "commit": "afa8da942115f2961fdbfa80807ea0b232ff6c00",
