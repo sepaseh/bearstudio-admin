@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "phase": "source-preparation",
-  "publicationStage": "ui",
+  "publicationStage": "core",
   "applicationReady": false,
   "checks": [
     {
