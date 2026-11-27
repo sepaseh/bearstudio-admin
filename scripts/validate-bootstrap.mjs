@@ -1,0 +1,939 @@
+import { spawnSync } from "node:child_process";
+import { lstat, readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import {
+  isPreparationSource,
+  sourceFilesForStage,
+} from "./publication-stages.mjs";
+
+const policyPath = ".github/bootstrap-policy.json";
+const coreFiles = [
+  policyPath,
+  "scripts/validate-bootstrap.mjs",
+  "scripts/validate-bootstrap.test.mjs",
+  "scripts/publication-stages.mjs",
+];
+const foundationFiles = [
+  ".agents/validation.json",
+  ".github/workflows/ci.yml",
+  "package.json",
+  "package-lock.json",
+  "scripts/validate.mjs",
+  "scripts/validate.test.mjs",
+  "scripts/check-ci.mjs",
+  "scripts/check-ci.test.mjs",
+  "src/shared/api/token.ts",
+  "src/shared/api/token.test.ts",
+  "src/shared/api/types.ts",
+  "src/shared/contracts/index.ts",
+  "src/shared/lib/transform.ts",
+  "src/shared/lib/transform.test.ts",
+  "tsconfig.json",
+];
+const foundationSources = new Set([
+  "src/shared/api/token.ts",
+  "src/shared/api/token.test.ts",
+  "src/shared/api/types.ts",
+  "src/shared/contracts/index.ts",
+  "src/shared/lib/transform.ts",
+  "src/shared/lib/transform.test.ts",
+]);
+const isFoundationSource = (file) => foundationSources.has(file);
+const catalogFiles = [
+  "src/shared/i18n/catalogs.ts",
+  "src/shared/i18n/catalogs.test.ts",
+  "src/shared/i18n/locales.ts",
+  "src/shared/i18n/dayjs/fa.ts",
+  ...["ar", "de", "en", "es", "fa", "fr", "it", "pt", "ru", "tr"].map(
+    (code) => `src/shared/i18n/locales/${code}.ts`,
+  ),
+];
+const runtimeFiles = [
+  "tooling/paths.ts",
+  "src/shared/i18n/index.ts",
+  "src/shared/i18n/index.test.ts",
+  "src/shared/i18n/date.ts",
+  "src/shared/i18n/date.test.ts",
+  "src/shared/i18n/dayjs.test.ts",
+  "src/shared/lib/error.ts",
+  "src/shared/lib/error.test.ts",
+];
+const httpFiles = [
+  "src/features/auth/api.test.ts",
+  "src/features/auth/api.ts",
+  "src/features/auth/logout.test.ts",
+  "src/features/auth/types.ts",
+  "src/features/roles/api.test.ts",
+  "src/features/roles/api.ts",
+  "src/features/roles/types.ts",
+  "src/features/settings/api.test.ts",
+  "src/features/settings/api.ts",
+  "src/features/settings/types.ts",
+  "src/features/users/api.helpers.test.ts",
+  "src/features/users/api.test.ts",
+  "src/features/users/api.ts",
+  "src/features/users/types.ts",
+  "src/shared/api/client.test.ts",
+  "src/shared/api/client.ts",
+  "src/shared/api/config.test.ts",
+  "src/shared/api/config.ts",
+  "src/shared/api/index.ts",
+  "src/shared/api/transport.test.ts",
+  "src/shared/contracts/appearance.test.ts",
+  "src/shared/contracts/appearance.ts",
+  "src/vite-env.d.ts",
+  "docs/authentication.md",
+];
+const uiFiles = [
+  "src/test/browser.ts",
+  "src/shared/storage/hooks/index.ts",
+  "src/shared/ui/error-boundary/ErrorFallback.tsx",
+  "docs/development.md",
+  "public/favicon.svg",
+  "public/logo.svg",
+  "src/assets/fonts/vazirmatn/OFL.txt",
+  "src/assets/fonts/vazirmatn/Vazirmatn-Variable.woff2",
+  "src/assets/fonts/vazirmatn/vazirmatn.test.ts",
+  "src/assets/public-assets.test.ts",
+  "src/assets/styles/index.css",
+  "src/assets/styles/styles.test.ts",
+  "src/assets/styles/vazirmatn.css",
+  "src/shared/config/constants.ts",
+  "src/shared/config/index.ts",
+  "src/shared/hooks/index.ts",
+  "src/shared/hooks/useGoBack.test.tsx",
+  "src/shared/hooks/useGoBack.ts",
+  "src/shared/lib/index.ts",
+  "src/shared/storage/compact.test.ts",
+  "src/shared/storage/compact.ts",
+  "src/shared/storage/hooks/useLocalStorageWatcher.test.ts",
+  "src/shared/storage/hooks/useLocalStorageWatcher.ts",
+  "src/shared/storage/index.ts",
+  "src/shared/storage/state.test.ts",
+  "src/shared/storage/state.ts",
+  "src/shared/storage/theme.test.ts",
+  "src/shared/storage/theme.ts",
+  "src/shared/ui/digits-input/DigitsInput.test.tsx",
+  "src/shared/ui/digits-input/DigitsInput.tsx",
+  "src/shared/ui/digits-input/index.ts",
+  "src/shared/ui/error-boundary/ErrorBoundary.test.tsx",
+  "src/shared/ui/error-boundary/ErrorBoundary.tsx",
+  "src/shared/ui/error-boundary/index.ts",
+  "src/shared/ui/password-fields/PasswordFields.test.tsx",
+  "src/shared/ui/password-fields/PasswordFields.tsx",
+  "src/shared/ui/password-fields/index.ts",
+  "src/shared/ui/route-loading/RouteLoading.test.tsx",
+  "src/shared/ui/route-loading/RouteLoading.tsx",
+  "src/shared/ui/route-loading/index.ts",
+  "src/test/render.tsx",
+  "src/test/setup.ts",
+];
+const coreAuthFiles = [
+  "src/features/auth/index.ts",
+  "docs/authentication.md",
+  "docs/architecture.md",
+  "SECURITY.md",
+  "src/app/config/index.ts",
+  "src/app/config/routes.ts",
+  "src/app/contexts/Core.ts",
+  "src/app/contexts/index.ts",
+  "src/app/hooks/index.ts",
+  "src/app/hooks/useAntd.test.tsx",
+  "src/app/hooks/useAntd.ts",
+  "src/app/hooks/useCore.test.tsx",
+  "src/app/hooks/useCore.ts",
+  "src/app/lib/access.test.ts",
+  "src/app/lib/access.ts",
+  "src/app/lib/index.ts",
+  "src/features/not-found/NotFound.test.tsx",
+  "src/features/not-found/NotFound.tsx",
+  "src/app/providers/antd/Antd.test.tsx",
+  "src/app/providers/antd/Antd.tsx",
+  "src/app/providers/core/Core.test.tsx",
+  "src/app/providers/core/Core.tsx",
+  "src/app/providers/index.ts",
+  "src/features/login/Login.test.tsx",
+  "src/features/login/Login.tsx",
+  "src/features/login/index.ts",
+  "src/layouts/auth/Auth.test.tsx",
+  "src/layouts/auth/Auth.tsx",
+  "src/layouts/auth/index.ts",
+  "src/layouts/default/Default.test.tsx",
+  "src/layouts/default/Default.tsx",
+  "src/layouts/default/index.ts",
+];
+const businessFiles = [
+  "scripts/deployment.test-support.mjs",
+  "scripts/healthcheck.mjs",
+  "scripts/healthcheck.test.mjs",
+  "scripts/validate-deployment-env.mjs",
+  "scripts/validate-deployment-env.test.mjs",
+  "docs/authentication.md",
+  "docs/development.md",
+  "src/features/dashboard/Dashboard.tsx",
+  "src/features/dashboard/index.ts",
+  "src/features/roles/Roles.test.tsx",
+  "src/features/roles/Roles.tsx",
+  "src/features/roles/components/role-form/RoleForm.tsx",
+  "src/features/roles/index.ts",
+  "src/features/settings/Settings.test.tsx",
+  "src/features/settings/Settings.tsx",
+  "src/features/settings/index.ts",
+  "src/features/users/Users.test.tsx",
+  "src/features/users/Users.tsx",
+  "src/features/users/components/user-form/UserForm.tsx",
+  "src/features/users/components/user-role-form/UserRoleForm.tsx",
+  "src/features/users/constants.ts",
+  "src/features/users/index.ts",
+  "src/test/integration/forms.test.tsx",
+];
+const storybookFiles = [
+  "src/app/providers/antd/Antd.stories.tsx",
+  "src/app/providers/core/Core.stories.tsx",
+  "src/shared/ui/error-boundary/ErrorFallback.stories.tsx",
+  "src/shared/ui/image-upload/ImageUpload.stories.tsx",
+  ".storybook/StoryShell.tsx",
+  ".storybook/fixtures.ts",
+  ".storybook/PreviewFrame.tsx",
+  ".storybook/main.ts",
+  ".storybook/mocks.test.ts",
+  ".storybook/mocks.ts",
+  ".storybook/preview.tsx",
+  ".storybook/request-guard.ts",
+  ".storybook/request-guard.test.ts",
+  ".storybook/vite.config.ts",
+  ".storybook/vitest.setup.ts",
+  "docs/testing.md",
+  "src/features/not-found/NotFound.stories.tsx",
+  "src/features/login/Login.stories.tsx",
+  "src/features/roles/Roles.stories.tsx",
+  "src/features/roles/components/role-form/RoleForm.stories.tsx",
+  "src/features/settings/Settings.stories.tsx",
+  "src/features/users/Users.stories.tsx",
+  "src/features/users/components/user-form/UserForm.stories.tsx",
+  "src/features/users/components/user-role-form/UserRoleForm.stories.tsx",
+  "src/layouts/auth/Auth.stories.tsx",
+  "src/layouts/default/Default.stories.tsx",
+  "src/shared/ui/digits-input/DigitsInput.stories.tsx",
+  "src/shared/ui/error-boundary/ErrorBoundary.stories.tsx",
+  "src/shared/ui/icon/Icon.stories.tsx",
+  "src/shared/ui/password-fields/PasswordFields.stories.tsx",
+  "src/shared/ui/route-loading/RouteLoading.stories.tsx",
+  "src/test/storybook/StoryAppearance.stories.tsx",
+  "src/test/storybook/StoryShell.test.tsx",
+  "src/test/storybook/Transport.stories.tsx",
+  "vitest.storybook.config.ts",
+  "src/features/faqs/Faqs.stories.tsx",
+  "src/features/faqs/components/faq-form/FaqForm.stories.tsx",
+  "src/shared/ui/sortable-table/SortableTable.stories.tsx",
+  "src/features/article-categories/ArticleCategories.stories.tsx",
+  "src/features/article-categories/components/article-category-form/ArticleCategoryForm.stories.tsx",
+  "src/features/articles/Articles.stories.tsx",
+  "src/features/articles/components/article-form/ArticleForm.stories.tsx",
+  "src/shared/ui/rich-text-editor/LazyRichTextEditor.stories.tsx",
+  "src/shared/ui/rich-text-editor/RichTextEditor.stories.tsx",
+];
+const retiredGuidanceFiles = new Set([
+  ".agents/skills/commit/SKILL.md",
+  ".agents/skills/create-issue/SKILL.md",
+  ".agents/skills/create-pr/SKILL.md",
+  ".agents/skills/design-ui/SKILL.md",
+  ".agents/skills/review-pr/SKILL.md",
+  ".agents/skills/start-issue/SKILL.md",
+  ".agents/skills/validate-change/SKILL.md",
+  ".claude/skills/design-ui/SKILL.md",
+]);
+const guidanceFiles = new Set([
+  ".agents/README.md",
+  ".agents/evaluation/cases.json",
+  ".agents/evaluation/run-template.json",
+  ".agents/hooks/block-dangerous.mjs",
+  ".agents/hooks/block-dangerous.sh",
+  ".agents/hooks/post-edit-format.sh",
+  ".agents/hooks/quality-gate.sh",
+  ".agents/navigation.json",
+  ".agents/rules/admin.md",
+  ".agents/rules/api-collection.md",
+  ".agents/rules/branches.md",
+  ".agents/rules/code-quality.md",
+  ".agents/rules/code-review.md",
+  ".agents/rules/collection-quality.md",
+  ".agents/rules/commits.md",
+  ".agents/rules/git.md",
+  ".agents/rules/guidance.md",
+  ".agents/rules/imports.md",
+  ".agents/rules/issues.md",
+  ".agents/rules/localization.md",
+  ".agents/rules/ordering.md",
+  ".agents/rules/pull-requests.md",
+  ".agents/rules/react.md",
+  ".agents/rules/safety.md",
+  ".agents/rules/styling.md",
+  ".agents/rules/testing.md",
+  ".agents/rules/typescript.md",
+  ".agents/settings.json",
+  ".github/CODEOWNERS",
+  ".github/dependabot.yml",
+  "CLAUDE.md",
+  "DESIGN.md",
+  "docs/README.md",
+  "docs/comprehension-evaluation.md",
+  "CONTRIBUTING.md",
+  "docs/development.md",
+  "docs/testing.md",
+  "docs/validation.md",
+  "scripts/block-dangerous.test.mjs",
+  "scripts/post-edit-format.test.mjs",
+  "scripts/quality-gate.test.mjs",
+  "scripts/hooks.test-support.mjs",
+  "scripts/check-guidance.mjs",
+  "scripts/check-guidance.test.mjs",
+]);
+const sourceDependencies = new Map([
+  ["scripts/package-release.mjs", ["scripts/build-directory.mjs"]],
+  ["scripts/stamp-admin-build.mjs", ["scripts/build-directory.mjs"]],
+  [".agents/hooks/block-dangerous.sh", [".agents/hooks/block-dangerous.mjs"]],
+  [
+    "scripts/block-dangerous.test.mjs",
+    [
+      ".agents/hooks/block-dangerous.mjs",
+      ".agents/hooks/block-dangerous.sh",
+      "scripts/hooks.test-support.mjs",
+    ],
+  ],
+  [
+    "scripts/post-edit-format.test.mjs",
+    [".agents/hooks/post-edit-format.sh", "scripts/hooks.test-support.mjs"],
+  ],
+  [
+    "scripts/quality-gate.test.mjs",
+    [".agents/hooks/quality-gate.sh", "scripts/hooks.test-support.mjs"],
+  ],
+  [
+    "scripts/check-guidance.test.mjs",
+    ["scripts/check-guidance.mjs", "scripts/check-guidance.test-support.mjs"],
+  ],
+  [
+    "scripts/check-guidance.test-support.mjs",
+    [
+      "scripts/check-guidance.mjs",
+      "scripts/ci-single-pass.test.yml",
+      "scripts/ci-application-single-pass.test.yml",
+    ],
+  ],
+  [
+    "scripts/check-guidance.integration.test.mjs",
+    ["scripts/check-guidance.mjs", "scripts/check-guidance.test-support.mjs"],
+  ],
+]);
+const operationsPrerequisiteFiles = new Set([
+  "scripts/build-directory.mjs",
+  "deploy/docker/admin-entrypoint.sh",
+  "deploy/docker/admin-healthcheck.sh",
+  "scripts/check-guidance.integration.test.mjs",
+  "scripts/dependency-compatibility.test.mjs",
+  "scripts/deploy-runtime.test.mjs",
+  "scripts/deployment.integration.test.mjs",
+  "scripts/healthcheck.test.mjs",
+  "scripts/render-deployment.integration.test.mjs",
+  "scripts/render-deployment.test.mjs",
+  "scripts/run-visual.integration.test.mjs",
+  "scripts/run-visual.test.mjs",
+  "scripts/validate-deployment-env.test.mjs",
+  "scripts/visual-environment.test.mjs",
+  "scripts/check-guidance.test-support.mjs",
+  "scripts/deployment.test-support.mjs",
+  ".dockerignore",
+  ".env.example",
+  ".release-please-manifest.json",
+  "SECURITY.md",
+  "deploy/docker/compose.env.example",
+  "deploy/docker/Dockerfile",
+  "deploy/docker/README.md",
+  "deploy/docker/compose.yaml",
+  "scripts/docker-smoke-resources.mjs",
+  "scripts/test-docker-release.mjs",
+  "deploy/native/README.md",
+  "deploy/native/nginx.env.example",
+  "deploy/native/nginx/admin.conf.template",
+  "deploy/native/nginx/acme-bootstrap.conf.template",
+  "docs/testing.md",
+  "docs/deployment.md",
+  "docs/development.md",
+  "e2e/visual/baselines/win32/admin-login-en-light.png",
+  "e2e/visual/baselines/win32/admin-login-fa-dark.png",
+  "e2e/visual/baselines/win32/admin-role-drawer-en-dark.png",
+  "e2e/visual/baselines/win32/admin-users-fa-light.png",
+  "e2e/visual/baselines/win32/metadata.json",
+  "release-please-config.json",
+  "scripts/check-bundle-size.mjs",
+  "scripts/check-bundle-size.test.mjs",
+  "scripts/docker-smoke-resources.test.mjs",
+  "scripts/docker-smoke-resources.test-support.mjs",
+  "scripts/test-docker-release.test.mjs",
+  "scripts/healthcheck.mjs",
+  "scripts/lighthouse-policy.mjs",
+  "scripts/lighthouse-policy.test.mjs",
+  "scripts/lighthouse-policy.test-support.mjs",
+  "scripts/package-release.mjs",
+  "scripts/package-release.test.mjs",
+  "scripts/render-deployment.mjs",
+  "scripts/run-lighthouse.mjs",
+  "scripts/run-lighthouse.test.mjs",
+  "scripts/run-visual.mjs",
+  "scripts/stamp-admin-build.mjs",
+  "scripts/stamp-admin-build.test.mjs",
+  "scripts/validate-deployment-env.mjs",
+  "scripts/validate-production-env.mjs",
+  "scripts/validate-production-env.test.mjs",
+  "scripts/validate-workflow-targets.mjs",
+  "scripts/validate-workflow-targets.test.mjs",
+  "scripts/visual-environment.mjs",
+  "tooling/paths.ts",
+]);
+const deferredApplicationPrerequisites = new Set([
+  "scripts/run-lighthouse.mjs",
+  "scripts/run-lighthouse.test.mjs",
+  "scripts/run-visual.mjs",
+  "scripts/run-visual.test.mjs",
+  "scripts/run-visual.integration.test.mjs",
+  "scripts/visual-environment.mjs",
+  "scripts/visual-environment.test.mjs",
+  "scripts/validate-production-env.mjs",
+  "scripts/validate-production-env.test.mjs",
+  "scripts/validate-workflow-targets.mjs",
+  "scripts/validate-workflow-targets.test.mjs",
+]);
+const releasePrerequisiteFiles = [...operationsPrerequisiteFiles].filter(
+  (file) => !deferredApplicationPrerequisites.has(file),
+);
+const operationalTemplates = new Set([
+  ".github/workflows/codeql.yml",
+  ".github/workflows/mutation.yml",
+  ".github/workflows/release.yml",
+  "stryker.config.json",
+]);
+const publicEnvironmentTemplates = new Set([
+  ".env.example",
+  "deploy/docker/compose.env.example",
+  "deploy/native/nginx.env.example",
+]);
+const applicationFiles = new Set([
+  "docs/content-management.md",
+  "src/features/home/Home.test.tsx",
+  "src/features/home/Home.stories.tsx",
+  "src/features/home/api.test.ts",
+  "src/features/projects/api.test.ts",
+  "src/features/projects/components/project-form/ProjectForm.test.tsx",
+  "src/features/services/api.test.ts",
+  "src/features/services/components/service-form/ServiceForm.test.tsx",
+  "src/features/files/addresses.ts",
+  "src/features/files/components/ManagedImageField.test.tsx",
+  "src/features/files/components/ManagedImageField.tsx",
+  "src/features/files/components/MediaPicker.tsx",
+  "src/features/files/components/VideoSourcePicker.tsx",
+  "src/features/home/Home.tsx",
+  "src/features/home/api.ts",
+  "src/features/home/index.ts",
+  "src/features/home/types.ts",
+  "src/features/home/useHome.ts",
+  "src/features/projects/Projects.tsx",
+  "src/features/projects/api.ts",
+  "src/features/projects/components/project-form/ProjectForm.tsx",
+  "src/features/projects/index.ts",
+  "src/features/projects/types.ts",
+  "src/features/services/Services.tsx",
+  "src/features/services/api.ts",
+  "src/features/services/components/service-form/ServiceForm.tsx",
+  "src/features/services/index.ts",
+  "src/features/services/types.ts",
+  "src/features/settings/AppearanceFields.tsx",
+  "src/features/settings/SiteFields.tsx",
+  "docs/access-management.md",
+  "src/features/users/components/UserRolePicker.tsx",
+  "docs/faqs.md",
+  "src/layouts/default/components/breadcrumbs/Breadcrumbs.tsx",
+  "src/layouts/default/components/breadcrumbs/Breadcrumbs.stories.tsx",
+  "src/layouts/default/components/navigation/Navigation.tsx",
+  "src/layouts/default/components/navigation/Navigation.stories.tsx",
+  "src/layouts/default/components/breadcrumbs/index.ts",
+  "src/layouts/default/components/navigation/index.ts",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dast.yml",
+  ".github/workflows/release.yml",
+  ".github/workflows/mutation.yml",
+  ".github/workflows/staging.yml",
+  ".github/workflows/deployment-smoke.yml",
+  "stryker.config.json",
+  "staging.config.ts",
+  "staging/setup.ts",
+  "staging/staging.spec.ts",
+  "smoke.config.ts",
+  "smoke/setup.ts",
+  "smoke/deployment.spec.ts",
+  "CHANGELOG.md",
+  "scripts/stop-visual-process-tree.ps1",
+  "scripts/stop-visual-process-tree.test.ps1",
+  "contract/api.contract.test.ts",
+  "e2e/accessibility.spec.ts",
+  "e2e/auth.spec.ts",
+  "e2e/fixtures.ts",
+  "e2e/font.spec.ts",
+  "e2e/language-authority.spec.ts",
+  "e2e/localization.spec.ts",
+  "e2e/management.spec.ts",
+  "e2e/request-reliability.spec.ts",
+  "e2e/security-headers.spec.ts",
+  "e2e/shared/admin-fixtures.ts",
+  "e2e/visual/admin.spec.ts",
+  "e2e/visual/readiness.ts",
+  "index.html",
+  "knip.json",
+  "playwright.config.ts",
+  "playwright.visual.config.ts",
+  "src/app/App.tsx",
+  "src/app/Routes.test.tsx",
+  "src/app/Routes.tsx",
+  "src/main.tsx",
+  "src/test/integration/pages.test.tsx",
+  "tsconfig.node.json",
+  "vite.config.ts",
+  "vitest.contract.config.ts",
+  "vitest.shims.d.ts",
+  "e2e/visual/baselines/application/win32/admin-login-en-light.png",
+  "e2e/visual/baselines/application/win32/admin-login-fa-dark.png",
+  "e2e/visual/baselines/application/win32/admin-role-drawer-en-dark.png",
+  "e2e/visual/baselines/application/win32/admin-users-fa-light.png",
+  "e2e/visual/baselines/application/win32/metadata.json",
+  "src/GlobalStyle.tsx",
+  "src/app/providers/antd/index.ts",
+  "src/app/providers/core/index.ts",
+  "src/features/files/Files.test.tsx",
+  "src/shared/ui/ImageThumbnail.tsx",
+  "src/features/files/api.test.ts",
+  "src/features/files/api.ts",
+  "src/features/files/index.ts",
+  "src/features/files/types.ts",
+  "src/layouts/default/types.ts",
+  "src/shared/api/session.ts",
+  "src/shared/hooks/useAbortController.test.tsx",
+  "src/shared/hooks/useAbortController.ts",
+  "src/shared/hooks/useLock.test.tsx",
+  "src/shared/hooks/useLock.ts",
+  "src/shared/hooks/useUploadActivity.ts",
+  "src/shared/ui/MediaUploadCard.tsx",
+  "src/shared/ui/MediaUploadPlaceholder.tsx",
+  "src/shared/ui/image-upload/ImageUpload.test.tsx",
+  "src/shared/ui/image-upload/ImageUpload.tsx",
+  "src/shared/ui/image-upload/image.test.ts",
+  "src/shared/ui/image-upload/image.ts",
+  "src/shared/ui/image-upload/index.ts",
+  "src/shared/ui/video-upload/VideoUpload.test.tsx",
+  "src/shared/ui/video-upload/VideoUpload.tsx",
+  "src/shared/ui/video-upload/index.ts",
+  "src/shared/ui/video-upload/thumbnail.test.ts",
+  "src/shared/ui/video-upload/thumbnail.ts",
+  "src/test/deferred.ts",
+  "src/features/roles/components/role-form/RoleForm.test.tsx",
+  "src/features/users/components/user-form/UserForm.test.tsx",
+  "src/features/users/components/user-form/index.ts",
+  "src/features/users/components/user-role-form/UserRoleForm.test.tsx",
+  "src/features/users/components/user-role-form/index.ts",
+  "src/shared/hooks/useDebouncedFilters.test.tsx",
+  "src/shared/hooks/useDebouncedFilters.ts",
+  "src/shared/hooks/useFilterParams.test.tsx",
+  "src/shared/hooks/useFilterParams.ts",
+  "src/shared/lib/pagination.test.ts",
+  "src/shared/lib/pagination.ts",
+  "src/shared/lib/password.test.ts",
+  "src/shared/lib/password.ts",
+  "src/app/index.ts",
+  "src/features/not-found/index.ts",
+  "src/index.css",
+  "src/index.ts",
+  "src/test/resource-paths.test.ts",
+  "e2e/visual/baselines/application/win32/admin-settings-en-light.png",
+  "src/features/faqs/Faqs.test.tsx",
+  "src/features/faqs/Faqs.tsx",
+  "src/features/faqs/api.ts",
+  "src/features/faqs/components/faq-form/FaqForm.test.tsx",
+  "src/features/faqs/components/faq-form/FaqForm.tsx",
+  "src/features/faqs/index.ts",
+  "src/features/faqs/types.ts",
+  "src/features/faqs/api.test.ts",
+  "src/shared/ui/sortable-table/SortableTable.test.tsx",
+  "src/shared/ui/sortable-table/SortableTable.tsx",
+  "src/shared/ui/sortable-table/index.ts",
+  "src/shared/ui/sortable-table/reorder-rows.test.ts",
+  "src/shared/ui/sortable-table/reorder-rows.ts",
+  "src/features/article-categories/ArticleCategories.test.tsx",
+  "src/features/article-categories/ArticleCategories.tsx",
+  "src/features/article-categories/api.ts",
+  "src/features/article-categories/components/article-category-form/ArticleCategoryForm.test.tsx",
+  "src/features/article-categories/components/article-category-form/ArticleCategoryForm.tsx",
+  "src/features/article-categories/index.ts",
+  "src/features/article-categories/types.ts",
+  "src/features/article-categories/api.test.ts",
+  "src/assets/styles/editor.css",
+  "src/features/articles/Articles.test.tsx",
+  "src/features/articles/Articles.tsx",
+  "src/features/articles/api.test.ts",
+  "src/features/articles/api.ts",
+  "src/features/articles/components/article-form/ArticleForm.test.tsx",
+  "src/features/articles/components/article-form/ArticleForm.tsx",
+  "src/features/articles/index.ts",
+  "src/features/articles/types.ts",
+  "src/shared/ui/rich-text-editor/LazyRichTextEditor.test.tsx",
+  "src/shared/ui/rich-text-editor/LazyRichTextEditor.tsx",
+  "src/shared/ui/rich-text-editor/RichTextEditor.test.tsx",
+  "src/shared/ui/rich-text-editor/RichTextEditor.tsx",
+  "src/shared/ui/rich-text-editor/index.ts",
+]);
+const phaseOrder = [
+  "governance",
+  "repository-foundation",
+  "foundation",
+  "catalogs",
+  "runtime-localization",
+  "http-lifecycle",
+  "ui-foundation",
+  "core-auth",
+  "business-screens",
+  "storybook-verification",
+  "assistant-guidance",
+  "release-prerequisites",
+  "application-verification",
+];
+const supportsPhase = (phase, minimum) =>
+  phaseOrder.indexOf(phase) >= phaseOrder.indexOf(minimum);
+const publishedSource = (file, phase) =>
+  supportsPhase(phase, "foundation") &&
+  (isFoundationSource(file) ||
+    (supportsPhase(phase, "catalogs") && catalogFiles.includes(file)) ||
+    (supportsPhase(phase, "runtime-localization") &&
+      runtimeFiles.includes(file)) ||
+    (supportsPhase(phase, "http-lifecycle") && httpFiles.includes(file)) ||
+    (supportsPhase(phase, "ui-foundation") && uiFiles.includes(file)) ||
+    (supportsPhase(phase, "core-auth") && coreAuthFiles.includes(file)) ||
+    (supportsPhase(phase, "business-screens") &&
+      businessFiles.includes(file)) ||
+    (supportsPhase(phase, "storybook-verification") &&
+      storybookFiles.includes(file)) ||
+    (supportsPhase(phase, "application-verification") &&
+      applicationFiles.has(file)));
+
+const isGuidancePath = (file) =>
+  (file.startsWith(".agents/") && file !== ".agents/validation.json") ||
+  file.startsWith(".claude/") ||
+  guidanceFiles.has(file);
+
+const publishedGuidance = (file, phase) =>
+  supportsPhase(phase, "repository-foundation") &&
+  (guidanceFiles.has(file) ||
+    (phase === "application-verification"
+      ? !retiredGuidanceFiles.has(file) &&
+        (file === ".agents/skills-sources.json" ||
+          /^\.agents\/skills\/[a-z0-9]+(?:-[a-z0-9]+)*\/(?:[\w-][\w.-]*\/)*[\w-][\w.-]*$/.test(
+            file,
+          ))
+      : retiredGuidanceFiles.has(file)) ||
+    file === "SECURITY.md" ||
+    file === "scripts/check-guidance.test-support.mjs" ||
+    file === "scripts/check-guidance.integration.test.mjs");
+
+const publishedSharedDocument = (file, phase) =>
+  (file.startsWith("docs/") || file === "SECURITY.md") &&
+  publishedSource(file, phase);
+
+const isUnsafePublicationPath = (file, phase) =>
+  typeof file !== "string" ||
+  !file ||
+  file.includes("\\") ||
+  file.split("/").some((part) => !part || part === "." || part === "..") ||
+  /[*?[\]{}:\r\n]/.test(file) ||
+  /^(?:apps|packages|drizzle|collection|node_modules|server|coverage)(?:\/|$)/.test(
+    file,
+  ) ||
+  file === "drizzle.config.ts" ||
+  (/(?:^|\/)(?:(?:[^/]*\.)?env(?:[./]|$)|settings\.local\.json$)/i.test(file) &&
+    !(
+      supportsPhase(phase, "release-prerequisites") &&
+      publicEnvironmentTemplates.has(file)
+    )) ||
+  /\.(?:pem|key|pfx|p12|sqlite|db)$/.test(file);
+
+const isForbiddenPublicationPath = (file, phase) =>
+  isUnsafePublicationPath(file, phase) ||
+  (phase === "application-verification" &&
+    /\.fa\.(?:md|markdown|mdx)$/i.test(file)) ||
+  (deferredApplicationPrerequisites.has(file) &&
+    !supportsPhase(phase, "application-verification")) ||
+  (operationsPrerequisiteFiles.has(file) &&
+    !supportsPhase(phase, "release-prerequisites") &&
+    !publishedSource(file, phase) &&
+    !publishedGuidance(file, phase)) ||
+  (/^scripts\/(?:run-(?:lighthouse|visual)|stamp-admin-build|visual)(?:[.-].*)?\.mjs$/.test(
+    file,
+  ) &&
+    !operationsPrerequisiteFiles.has(file) &&
+    !(
+      supportsPhase(phase, "application-verification") &&
+      applicationFiles.has(file)
+    )) ||
+  (/^(?:deploy|e2e|tooling)(?:\/|$)/.test(file) &&
+    !operationsPrerequisiteFiles.has(file) &&
+    !(
+      supportsPhase(phase, "application-verification") &&
+      applicationFiles.has(file)
+    )) ||
+  (file === "stryker.config.json" &&
+    !supportsPhase(phase, "release-prerequisites")) ||
+  (applicationFiles.has(file) &&
+    !(
+      file === ".github/workflows/codeql.yml" &&
+      supportsPhase(phase, "repository-foundation")
+    ) &&
+    !supportsPhase(phase, "application-verification") &&
+    !publishedSource(file, phase) &&
+    !(
+      supportsPhase(phase, "release-prerequisites") &&
+      operationalTemplates.has(file)
+    )) ||
+  ((file.startsWith(".storybook/") || file === "vitest.storybook.config.ts") &&
+    (!supportsPhase(phase, "storybook-verification") ||
+      !storybookFiles.includes(file))) ||
+  (file.startsWith("src/") && !publishedSource(file, phase)) ||
+  (phase === "governance" && /^package(?:-lock)?\.json$/.test(file)) ||
+  (isGuidancePath(file) &&
+    !publishedSharedDocument(file, phase) &&
+    !publishedGuidance(file, phase));
+
+const phaseRequirements = [
+  ["catalogs", catalogFiles],
+  ["runtime-localization", runtimeFiles],
+  ["http-lifecycle", httpFiles],
+  ["ui-foundation", uiFiles],
+  ["core-auth", coreAuthFiles],
+  ["business-screens", businessFiles],
+  ["storybook-verification", storybookFiles],
+  ["assistant-guidance", [...guidanceFiles, "AGENTS.md"]],
+  ["release-prerequisites", releasePrerequisiteFiles],
+  [
+    "application-verification",
+    [...operationsPrerequisiteFiles, ...applicationFiles],
+  ],
+];
+const requiredFilesForPhase = (phase) => {
+  let initialFiles = foundationFiles;
+  if (phase === "governance") {
+    initialFiles = [".github/workflows/bootstrap.yml"];
+  } else if (phase === "repository-foundation") {
+    initialFiles = [
+      ...foundationFiles.filter((file) => !file.startsWith("src/")),
+      ".github/workflows/codeql.yml",
+    ];
+  }
+  return [
+    ...coreFiles,
+    ...initialFiles,
+    ...phaseRequirements.flatMap(([minimum, files]) =>
+      supportsPhase(phase, minimum) ? files : [],
+    ),
+  ];
+};
+
+export const validateBootstrapPolicy = (policy) => {
+  const preparation = policy?.phase === "source-preparation";
+  if (
+    policy?.schemaVersion !== 1 ||
+    (!phaseOrder.includes(policy.phase) && !preparation) ||
+    policy.applicationReady !== (policy.phase === "application-verification") ||
+    (!preparation && policy.publicationStage !== undefined) ||
+    !Array.isArray(policy.allowedFiles) ||
+    !policy.allowedFiles.length
+  )
+    throw new Error(
+      "An explicit publication phase and matching readiness are required.",
+    );
+  const preparedFiles = preparation
+    ? new Set(sourceFilesForStage(policy.publicationStage))
+    : undefined;
+  const files = new Set();
+  for (const file of policy.allowedFiles) {
+    const forbidden = preparation
+      ? isUnsafePublicationPath(file, "application-verification") ||
+        (isPreparationSource(file) && !preparedFiles.has(file))
+      : isForbiddenPublicationPath(file, policy.phase);
+    if (forbidden || files.has(file))
+      throw new Error(
+        `Publication files must be unique, exact paths within their declared phase: ${JSON.stringify(file)}`,
+      );
+    files.add(file);
+  }
+  const requiredFiles = [
+    ...(preparation
+      ? [
+          ...coreFiles,
+          ...foundationFiles.filter((file) => !file.startsWith("src/")),
+          ".github/workflows/codeql.yml",
+          ...preparedFiles,
+        ]
+      : requiredFilesForPhase(policy.phase)),
+    ...(phaseOrder.includes(policy.phase) &&
+    supportsPhase(policy.phase, "assistant-guidance") &&
+    !policy.applicationReady
+      ? retiredGuidanceFiles
+      : []),
+    ...(policy.applicationReady
+      ? [...files]
+          .filter((file) => file.startsWith(".agents/skills/"))
+          .map((file) => `${file.split("/").slice(0, 3).join("/")}/SKILL.md`)
+      : []),
+    ...[...sourceDependencies].flatMap(([file, dependencies]) =>
+      files.has(file) ? dependencies : [],
+    ),
+  ];
+  if (requiredFiles.some((file) => !files.has(file)))
+    throw new Error(
+      "The bootstrap policy cannot omit its mandatory guard files.",
+    );
+  return files;
+};
+
+export const inspectBootstrap = async (root) => {
+  if (
+    (await lstat(path.join(root, ".github"))).isSymbolicLink() ||
+    (await lstat(path.join(root, policyPath))).isSymbolicLink()
+  )
+    throw new Error("Bootstrap snapshots must not contain symbolic links.");
+  const policy = JSON.parse(
+    await readFile(path.join(root, policyPath), "utf8"),
+  );
+  const allowed = validateBootstrapPolicy(policy);
+  const directories = new Set(
+    [...allowed].flatMap((file) => {
+      const parts = file.split("/");
+      return parts
+        .slice(0, -1)
+        .map((_, index) => parts.slice(0, index + 1).join("/"));
+    }),
+  );
+  const found = new Set();
+  const visit = async (directory) => {
+    const entries = await readdir(path.join(root, directory), {
+      withFileTypes: true,
+    });
+    await Promise.all(
+      entries.map(async (entry) => {
+        const relative = directory ? `${directory}/${entry.name}` : entry.name;
+        if (relative === ".git") return;
+        if (
+          policy.phase !== "governance" &&
+          [
+            "node_modules",
+            "coverage",
+            ...(policy.applicationReady ? ["dist"] : []),
+          ].includes(relative)
+        ) {
+          if (entry.isSymbolicLink() || !entry.isDirectory())
+            throw new Error(
+              "Generated output must be an ordinary root directory.",
+            );
+          return;
+        }
+        if (entry.isSymbolicLink())
+          throw new Error(
+            "Bootstrap snapshots must not contain symbolic links.",
+          );
+        if (entry.isDirectory() && directories.has(relative)) {
+          await visit(relative);
+        } else if (entry.isFile() && allowed.has(relative)) {
+          found.add(relative);
+        } else {
+          throw new Error(`Unexpected bootstrap path: ${relative}`);
+        }
+      }),
+    );
+  };
+  await visit("");
+  if ([...allowed].some((file) => !found.has(file)))
+    throw new Error(
+      "The published bootstrap snapshot is missing declared files.",
+    );
+
+  await Promise.all(
+    [...found].map(async (file) => {
+      if (file.endsWith(".json"))
+        JSON.parse(await readFile(path.join(root, file), "utf8"));
+      if (file.endsWith(".mjs")) {
+        const result = spawnSync(
+          process.execPath,
+          ["--check", path.join(root, file)],
+          {
+            cwd: root,
+            encoding: "utf8",
+            windowsHide: true,
+          },
+        );
+        if (result.error || result.status !== 0)
+          throw new Error(`Bootstrap JavaScript syntax is invalid: ${file}`);
+      }
+    }),
+  );
+  const scopeByPhase = {
+    "source-preparation":
+      "Published finite, cumulative application modules and their genuine required verification without the application entry point or assembled routes. Application readiness remains false; module or workshop checks do not establish a production application build, application browser journeys, deployment or provider compatibility.",
+    "application-verification":
+      "Published standalone React/Vite application composition with one core gate, genuine browser/accessibility and consumer-contract checks, scheduled cross-browser verification, conditional visual provenance and an explicitly bounded Lighthouse advisory. Source admission is not a provider-contract result, human visual approval, deployment or production API authorization; record actual current-revision execution separately.",
+    "assistant-guidance":
+      "Published assistant-neutral instructions, safe optional hooks, current-source navigation and static comprehension cases alongside the isolated Storybook workshop; no application entry point, assembled routes, production application build, external API journey or visual gate is published. Static inventory checks do not establish automatic host instruction loading or benchmark improvement.",
+    "release-prerequisites":
+      "Published complete assistant-neutral instructions, the isolated Storybook workshop and independent finite release/quality prerequisites; no application entry point, assembled routes, production application build, external API journey or visual gate is published. Coupled visual, Lighthouse, production-environment and target-validation owners remain unpublished until application admission. Operational workflow and public deployment template source does not establish executable deployment, release publication, Lighthouse, mutation testing or visual approval.",
+    "storybook-verification":
+      "Published isolated Storybook build and real Chromium component interactions/accessibility with synthetic API fixtures; no application entry point, assembled routes, production application build, external API journey or visual gate is published.",
+    "business-screens":
+      "Published business screen/form modules with guarded mutations and synthetic HTTP/React tests; no application entry point, assembled routes, production build, Storybook/browser journey or visual gate is published.",
+    "core-auth":
+      "Published Core and Ant Design providers, typed access/navigation metadata, authentication forms and layouts with synthetic lifecycle tests; no application entry point, route composition, production build, browser journey or visual gate is published.",
+    "ui-foundation":
+      "Published Ant Design widgets, theme/preferences foundations, real font/vector asset validation and synthetic HTTP/React tests; application composition, production build, browser journeys and visual validation remain unpublished.",
+    "http-lifecycle":
+      "Published admin HTTP transport, feature wire adapters, complete server-owned settings metadata and request lifecycle hooks, with synthetic HTTP and real hook tests; the runnable panel, production build and browser journeys are not published or validated.",
+    "runtime-localization":
+      "Published admin primitives, complete catalogs and real translation/date runtime adapters; UI, API integration and browser journeys are not published or validated.",
+    governance:
+      "Published governance files only; the admin application is not published or validated.",
+    "repository-foundation":
+      "Published repository governance, selected canonical assistant guidance and their verification toolchain only; application source, UI, API integration, assembled application composition and browser behavior remain unpublished and unvalidated.",
+    foundation:
+      "Published admin token state, transport types and pure utilities only; UI, API integration and browser behavior are not published or validated.",
+    catalogs:
+      "Published admin primitives and complete local catalog data; runtime translation adapters, UI, API integration and browser behavior are not published or validated.",
+  };
+  return {
+    applicationReady: policy.applicationReady,
+    files: found.size,
+    phase: policy.phase,
+    ...(policy.phase === "source-preparation"
+      ? { publicationStage: policy.publicationStage }
+      : {}),
+    scope: scopeByPhase[policy.phase],
+  };
+};
+
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  try {
+    const result = await inspectBootstrap(process.cwd());
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(
+      error instanceof Error ? error.message : "Bootstrap validation failed.",
+    );
+    process.exitCode = 1;
+  }
+}

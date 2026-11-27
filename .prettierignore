@@ -1,0 +1,19 @@
+dist
+dist-ssr
+node_modules
+*.local
+.vitest-cache
+.vitest
+.stryker-tmp
+
+**/coverage/
+**/storybook-static/
+**/test-results/
+**/playwright-report/
+releases/
+
+# Keep vendored skill snapshots and their recorded hashes byte-stable.
+.agents/skills/*
+!.agents/skills/update-panel-contract/
+!.agents/skills/validate-panel/
+!.agents/skills/verify-panel-release/
