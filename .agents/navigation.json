@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    {
+      "id": "publication-validation",
+      "when": "Select and verify the exact repository tooling source.",
+      "owners": [
+        "scripts/validate-bootstrap.mjs",
+        "scripts/validate.mjs",
+        "scripts/check-ci.mjs"
+      ],
+      "contracts": [
+        ".github/bootstrap-policy.json",
+        ".agents/validation.json",
+        "docs/validation.md"
+      ],
+      "tests": [
+        "scripts/validate-bootstrap.test.mjs",
+        "scripts/validate.test.mjs",
+        "scripts/check-ci.test.mjs"
+      ],
+      "checks": ["snapshot", "ci-policy", "governance-coverage"]
+    }
+  ]
+}

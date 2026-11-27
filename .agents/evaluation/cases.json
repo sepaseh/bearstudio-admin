@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "publication-evidence",
+      "prompt": {
+        "en": "Which checks apply to this exact phase, and what remains for hosted review?"
+      },
+      "taskIds": ["publication-validation"],
+      "evidence": [
+        ".github/bootstrap-policy.json",
+        ".agents/validation.json",
+        "docs/validation.md"
+      ],
+      "mustExplain": [
+        "The complete full profile verifies the exact admitted tooling source.",
+        "Hosted results require a current hosted run."
+      ],
+      "mustNot": ["Claim a runnable panel, browser journey, or deployment."],
+      "checks": ["snapshot", "ci-policy", "governance-coverage"]
+    }
+  ]
+}
