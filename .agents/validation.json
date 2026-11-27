@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "phase": "source-preparation",
-  "publicationStage": "tooling",
+  "publicationStage": "runtime",
   "applicationReady": false,
   "checks": [
     {
@@ -110,14 +110,8 @@
     ]
   },
   "externalWorkflows": [
-    {
-      "path": ".github/workflows/ci.yml",
-      "mode": "ci"
-    },
-    {
-      "path": ".github/workflows/codeql.yml",
-      "mode": "security"
-    }
+    { "path": ".github/workflows/ci.yml", "mode": "ci" },
+    { "path": ".github/workflows/codeql.yml", "mode": "security" }
   ],
   "verificationModel": "single-pass-v1"
 }

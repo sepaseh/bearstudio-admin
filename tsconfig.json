@@ -15,7 +15,13 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2023",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tooling/**/*.ts",
+    "vitest.config.ts"
+  ]
 }
