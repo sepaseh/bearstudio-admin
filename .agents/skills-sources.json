@@ -1,6 +1,14 @@
 [
   {
     "project": "bearstudio-admin",
+    "name": "web-design-guidelines",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+    "path": "skills/web-design-guidelines",
+    "skillSha256": "360B1240ACFFFA95E76373DB9F837A1F28ABA8F6D4C361E3D588BE0EAEFAA070"
+  },
+  {
+    "project": "bearstudio-admin",
     "name": "vercel-react-best-practices",
     "repository": "https://github.com/vercel-labs/agent-skills",
     "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
@@ -14,5 +22,45 @@
         "installedSha256": "1FE182A457585DC5D1F532BEEF4C956F2D071D452A1FA243602297C97B7EB7E4"
       }
     ]
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "vercel-composition-patterns",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+    "path": "skills/composition-patterns",
+    "skillSha256": "E38E0EAA609316B10423A9A138ED95E35099ACCD3F735585295C8A8F165C28A3"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "vite",
+    "repository": "https://github.com/antfu/skills",
+    "commit": "4a6bb39e7b45e26402eb215393c51ccf5df1ca4c",
+    "path": "skills/vite",
+    "skillSha256": "311367FF6B95605D668BD6EB6A2914356D048FD66BD02699E5FEDB4332E2A191"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "vitest",
+    "repository": "https://github.com/antfu/skills",
+    "commit": "4a6bb39e7b45e26402eb215393c51ccf5df1ca4c",
+    "path": "skills/vitest",
+    "skillSha256": "01C2DA913702DCC3F944B93FE92CDC67D594C9126A6C919653D3FB353A5B8E48"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "ant-design",
+    "repository": "https://github.com/ant-design/antd-skill",
+    "commit": "e65d2d3da9a2a129885131f5aeffe2c9037f83cb",
+    "path": "skills/ant-design",
+    "skillSha256": "819563D3AD887B5B2807704FE4116B12F7ABCA23D25DE35BB54D724B33245508"
+  },
+  {
+    "project": "bearstudio-admin",
+    "name": "react-router-data-mode",
+    "repository": "https://github.com/remix-run/agent-skills",
+    "commit": "33578aae4aa36a90c9f8f602105a1ccb0f4efe45",
+    "path": "skills/react-router-data-mode",
+    "skillSha256": "B65204814690FDA386B4B0D263A5A9AB51515033436BB8AC9CD6A78D79A7B569"
   }
 ]
