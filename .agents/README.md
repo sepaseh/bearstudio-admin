@@ -1,9 +1,12 @@
-# Assistant guidance
+# Assistant skills
 
-Route publication and validation changes through the [source navigation](navigation.json)
-and the [canonical validation manifest](validation.json). Use [synthetic examples](evaluation/cases.json)
-to check that the documented distinctions are clear.
+Use the skills relevant to the task and follow the project instructions.
+The source manifest records pinned upstream revisions and entry point hashes.
 
-The tooling phase covers repository admission, workflow policy, assistant
-guidance, dependency review and code validation. Follow the [validation guide](../docs/validation.md)
-for evidence and the [contribution procedure](../CONTRIBUTING.md) for Git and hosted review.
+| Skill                                                                      | Source                                                                                                                                            |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [vercel-react-best-practices](skills/vercel-react-best-practices/SKILL.md) | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/5a37a6329fbad3666c3207392a6a7c0110e92efb/skills/react-best-practices) |
+
+When the Modern Web Guidance skill is present, its command can retrieve topics from upstream.
+
+[Source manifest](skills-sources.json)

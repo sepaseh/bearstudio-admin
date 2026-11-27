@@ -1,0 +1,18 @@
+[
+  {
+    "project": "bearstudio-admin",
+    "name": "vercel-react-best-practices",
+    "repository": "https://github.com/vercel-labs/agent-skills",
+    "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+    "path": "skills/react-best-practices",
+    "skillSha256": "71ED7794962FA6E803EE83030517B5B93A9F70FBFEB431EC4535C5480A8D8355",
+    "localAdjustments": [
+      {
+        "file": "AGENTS.md",
+        "reason": "Correct three relative links in the upstream compiled guide to existing rules files.",
+        "upstreamSha256": "FC93E7421177BBF869CCE892BC60A6C83A4517D974BC3BF65C4E2C1E58A6CCF6",
+        "installedSha256": "1FE182A457585DC5D1F532BEEF4C956F2D071D452A1FA243602297C97B7EB7E4"
+      }
+    ]
+  }
+]

@@ -2,7 +2,7 @@
   "name": "bearstudio-admin-tooling",
   "description": "Assistant-neutral guidance for the repository tooling phase.",
   "rules": [],
-  "skills": [],
+  "skills": [".agents/skills/vercel-react-best-practices/SKILL.md"],
   "optionalHooks": [
     ".agents/hooks/block-dangerous.mjs",
     ".agents/hooks/block-dangerous.sh",
